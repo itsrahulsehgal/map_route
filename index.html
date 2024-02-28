@@ -6,8 +6,48 @@
     <title>Map with Route</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
     <style>
-        #map { height: 60vh; }
-        #routeDetails { margin-top: 15px; }
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 20px;
+            background-color: #282c35;
+            color: #fff;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        input {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 15px;
+            box-sizing: border-box;
+            border: 1px solid #555;
+            border-radius: 4px;
+            background-color: #434953;
+            color: #fff;
+        }
+
+        button {
+            background-color: #4caf50;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        #map {
+            height: 60vh;
+            margin-top: 15px;
+        }
+
+        #routeDetails {
+            margin-top: 15px;
+            color: #fff;
+        }
     </style>
 </head>
 <body>
@@ -30,12 +70,13 @@
         function showRoute() {
             const sourcePlace = document.getElementById('sourcePlace').value;
             const destPlace = document.getElementById('destPlace').value;
-            const apiKey = '5b3ce3597851110001cf6248724523a19b364ff6b958f1b46b6e420a'; 
+            const apiKey = '5b3ce3597851110001cf6248724523a19b364ff6b958f1b46b6e420a'; // Replace with your API key
 
             const geocodeUrl = (place) => `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(place)}`;
 
             const routeUrl = (sourceLat, sourceLng, destLat, destLng) => `https://api.openrouteservice.org/v2/directions/driving-car?api_key=${apiKey}&start=${sourceLng},${sourceLat}&end=${destLng},${destLat}`;
 
+            // Clear the existing map
             if (map) {
                 map.off();
                 map.remove();
@@ -57,7 +98,7 @@
                         .then(routeData => {
                             const route = L.geoJSON(routeData.features[0].geometry).addTo(map);
 
-                            const distance = routeData.features[0].properties.segments[0].distance / 1000; 
+                            const distance = routeData.features[0].properties.segments[0].distance / 1000; // Convert to kilometers
                             const duration = routeData.features[0].properties.segments[0].duration;
 
                             displayRouteDetails(distance, duration);
