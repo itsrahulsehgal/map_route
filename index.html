@@ -6,7 +6,8 @@
     <title>Map with Route</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
     <style>
-        #map { height: 90vh; }
+        #map { height: 60vh; }
+        #routeDetails { margin-top: 15px; }
     </style>
 </head>
 <body>
@@ -20,17 +21,25 @@
     </div>
     <button onclick="showRoute()">Show Route</button>
     <div id="map"></div>
+    <div id="routeDetails"></div>
 
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
     <script>
+        let map;
+
         function showRoute() {
             const sourcePlace = document.getElementById('sourcePlace').value;
             const destPlace = document.getElementById('destPlace').value;
-            const apiKey = '5b3ce3597851110001cf6248724523a19b364ff6b958f1b46b6e420a'; // Replace with your API key
+            const apiKey = '5b3ce3597851110001cf6248724523a19b364ff6b958f1b46b6e420a'; 
 
             const geocodeUrl = (place) => `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(place)}`;
 
             const routeUrl = (sourceLat, sourceLng, destLat, destLng) => `https://api.openrouteservice.org/v2/directions/driving-car?api_key=${apiKey}&start=${sourceLng},${sourceLat}&end=${destLng},${destLat}`;
+
+            if (map) {
+                map.off();
+                map.remove();
+            }
 
             Promise.all([fetch(geocodeUrl(sourcePlace)), fetch(geocodeUrl(destPlace))])
                 .then(responses => Promise.all(responses.map(response => response.json())))
@@ -40,7 +49,7 @@
                     const destLat = parseFloat(data[1][0].lat);
                     const destLng = parseFloat(data[1][0].lon);
 
-                    const map = L.map('map').setView([sourceLat, sourceLng], 15);
+                    map = L.map('map').setView([sourceLat, sourceLng], 15);
                     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
                     fetch(routeUrl(sourceLat, sourceLng, destLat, destLng))
@@ -48,12 +57,28 @@
                         .then(routeData => {
                             const route = L.geoJSON(routeData.features[0].geometry).addTo(map);
 
-                            const distance = routeData.features[0].properties.segments[0].distance;
-                            console.log('Distance:', distance.toFixed(2), 'meters');
+                            const distance = routeData.features[0].properties.segments[0].distance / 1000; 
+                            const duration = routeData.features[0].properties.segments[0].duration;
+
+                            displayRouteDetails(distance, duration);
                         })
                         .catch(error => console.error('Error fetching route data:', error));
                 })
                 .catch(error => console.error('Error fetching geocoding data:', error));
+        }
+
+        function displayRouteDetails(distance, duration) {
+            const routeDetailsElement = document.getElementById('routeDetails');
+            routeDetailsElement.innerHTML = `
+                <p><strong>Distance:</strong> ${distance.toFixed(2)} kilometers</p>
+                <p><strong>Duration:</strong> ${formatDuration(duration)}</p>
+            `;
+        }
+
+        function formatDuration(seconds) {
+            const hours = Math.floor(seconds / 3600);
+            const minutes = Math.floor((seconds % 3600) / 60);
+            return hours > 0 ? `${hours} hours ${minutes} minutes` : `${minutes} minutes`;
         }
     </script>
 </body>
