@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Map with Route</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <style>
+        #map { height: 90vh; }
+    </style>
+</head>
+<body>
+    <div>
+        <label for="sourcePlace">Source Place:</label>
+        <input type="text" id="sourcePlace" placeholder="Enter source place name">
+    </div>
+    <div>
+        <label for="destPlace">Destination Place:</label>
+        <input type="text" id="destPlace" placeholder="Enter destination place name">
+    </div>
+    <button onclick="showRoute()">Show Route</button>
+    <div id="map"></div>
+
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script>
+        function showRoute() {
+            const sourcePlace = document.getElementById('sourcePlace').value;
+            const destPlace = document.getElementById('destPlace').value;
+            const apiKey = '5b3ce3597851110001cf6248724523a19b364ff6b958f1b46b6e420a'; // Replace with your API key
+
+            const geocodeUrl = (place) => `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(place)}`;
+
+            const routeUrl = (sourceLat, sourceLng, destLat, destLng) => `https://api.openrouteservice.org/v2/directions/driving-car?api_key=${apiKey}&start=${sourceLng},${sourceLat}&end=${destLng},${destLat}`;
+
+            Promise.all([fetch(geocodeUrl(sourcePlace)), fetch(geocodeUrl(destPlace))])
+                .then(responses => Promise.all(responses.map(response => response.json())))
+                .then(data => {
+                    const sourceLat = parseFloat(data[0][0].lat);
+                    const sourceLng = parseFloat(data[0][0].lon);
+                    const destLat = parseFloat(data[1][0].lat);
+                    const destLng = parseFloat(data[1][0].lon);
+
+                    const map = L.map('map').setView([sourceLat, sourceLng], 15);
+                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+
+                    fetch(routeUrl(sourceLat, sourceLng, destLat, destLng))
+                        .then(response => response.json())
+                        .then(routeData => {
+                            const route = L.geoJSON(routeData.features[0].geometry).addTo(map);
+
+                            const distance = routeData.features[0].properties.segments[0].distance;
+                            console.log('Distance:', distance.toFixed(2), 'meters');
+                        })
+                        .catch(error => console.error('Error fetching route data:', error));
+                })
+                .catch(error => console.error('Error fetching geocoding data:', error));
+        }
+    </script>
+</body>
+</html>
